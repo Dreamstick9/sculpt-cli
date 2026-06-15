@@ -16,20 +16,26 @@ class OutputManager:
     def __init__(self, output_dir: Optional[Path] = None):
         self.output_dir = output_dir or Path.cwd() / "outputs"
     
-    def save(self, temp_path: Path, input_path: Path, model: ModelName, 
+    def save(self, temp_path: Path, input_path: Optional[Path], model: ModelName, 
              params: GenerationParams, force: bool = False) -> Path:
         """
         Save generated .glb to permanent location.
         
         Naming: <input_stem>__<model_slug>[_<param_hash>].glb
+        For text input, uses "prompt" as stem.
         """
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         # Build output filename
+        if input_path and input_path.exists():
+            base_stem = input_path.stem
+        else:
+            base_stem = "prompt"
+        
         param_str = f"{model.value}_{params.texture_resolution}_{params.remesh}_{params.quality}"
         param_hash = hashlib.md5(param_str.encode()).hexdigest()[:8]
         
-        base_name = f"{input_path.stem}__{model.value}"
+        base_name = f"{base_stem}__{model.value}"
         if param_hash != hashlib.md5(f"{model.value}_1024_none_normal".encode()).hexdigest()[:8]:
             base_name += f"_{param_hash}"
         

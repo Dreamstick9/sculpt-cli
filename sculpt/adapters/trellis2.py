@@ -18,9 +18,8 @@ class TRELLIS2Adapter(BaseAdapter):
     space_id = "microsoft/TRELLIS.2"
     api_name = "/generate"
     
-    def __init__(self, hf_token: str | None = None):
+    def __init__(self):
         super().__init__()
-        self.hf_token = hf_token
     
     async def generate(self, input_path: Path, params: GenerationParams) -> Path:
         """Generate 3D model using TRELLIS.2."""

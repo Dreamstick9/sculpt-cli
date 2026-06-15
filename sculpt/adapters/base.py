@@ -16,7 +16,7 @@ class BaseAdapter(ModelsBaseAdapter, ABC):
     name: ModelName
     license: LicenseType
     space_id: str
-    api_name: str = "/generate"
+    api_name: str | None = None
     
     def __init__(self):
         self._client = None

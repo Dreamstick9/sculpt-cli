@@ -18,9 +18,8 @@ class TRELLISTextAdapter(BaseAdapter):
     space_id = "JeffreyXiang/TRELLIS"
     api_name = "/generate"
     
-    def __init__(self, hf_token: str | None = None):
+    def __init__(self):
         super().__init__()
-        self.hf_token = hf_token
     
     async def generate(self, input_path: Path, params: GenerationParams) -> Path:
         """

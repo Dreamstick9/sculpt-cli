@@ -1,11 +1,10 @@
 """Two-stage text→image→3D adapter."""
 
 import asyncio
-import tempfile
 import time
 from pathlib import Path
 
-from gradio_client import Client as GradioClient, handle_file
+from gradio_client import Client as GradioClient
 
 from .base import BaseAdapter
 from ..models import ModelName, LicenseType, GenerationParams, AdapterHealth, InputType
@@ -31,7 +30,8 @@ class TwoStageAdapter(BaseAdapter):
     def _get_image_adapter(self):
         if self._image_adapter is None:
             # Use FLUX.1-schnell or SDXL-turbo for fast image generation
-            self._image_adapter = GradioClient(self.image_model_space, hf_token=self.hf_token)
+            # HF token handled via environment variable or config
+            self._image_adapter = GradioClient(self.image_model_space)
         return self._image_adapter
     
     def _get_3d_adapter(self, params: "GenerationParams"):
@@ -50,7 +50,7 @@ class TwoStageAdapter(BaseAdapter):
         
         def _sync_generate():
             prompt = params.prompt
-            if not prompt and input_path.exists():
+            if not prompt and input_path and input_path.exists():
                 prompt = input_path.read_text().strip()
             
             if not prompt:
@@ -59,14 +59,13 @@ class TwoStageAdapter(BaseAdapter):
             # Stage 1: text → image
             image_client = self._get_image_adapter()
             
-            # FLUX.1-schnell parameters
+            # FLUX.1-schnell parameters (no guidance_scale for FLUX.1-schnell)
             image_job = image_client.submit(
                 prompt=prompt,
                 seed=-1,
                 width=1024,
                 height=1024,
                 num_inference_steps=4,  # FLUX.1-schnell uses 4 steps
-                guidance_scale=0.0,
                 api_name="/infer",
             )
             
@@ -82,7 +81,7 @@ class TwoStageAdapter(BaseAdapter):
             # Stage 2: image → 3D
             model3d = self._get_3d_adapter(params)
             
-            # This is sync call - we need to run in executor
+            # Call the 3D adapter's generate method
             import asyncio
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
@@ -95,7 +94,7 @@ class TwoStageAdapter(BaseAdapter):
             
             return result
         
-        return await asyncio.get_event_loop().run_in_executor(None, _sync_generate)
+        return await loop.run_in_executor(None, _sync_generate)
     
     async def health_check(self) -> AdapterHealth:
         from ..models import AdapterHealth

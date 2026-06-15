@@ -96,10 +96,8 @@ async def execute_with_reliability(
     
     async def _generate():
         start = time.time()
-        # Adapter.generate is sync, run in executor
-        import asyncio
-        loop = asyncio.get_event_loop()
-        result_path = await loop.run_in_executor(None, lambda: adapter.generate(input_path, params))
+        # Adapter.generate is async, await it directly
+        result_path = await adapter.generate(input_path, params)
         inference_time = time.time() - start
         
         # Save output
